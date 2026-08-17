@@ -12,11 +12,11 @@
     "author": "YuTengjing",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/yutengjing/vscode-icons.git"
+        "url": "git+https://github.com/tjx666/vscode-icons.git"
     },
-    "homepage": "https://github.com/yutengjing/vscode-icons",
+    "homepage": "https://github.com/tjx666/vscode-icons",
     "bugs": {
-        "url": "https://github.com/yutengjing/vscode-icons/issues"
+        "url": "https://github.com/tjx666/vscode-icons/issues"
     },
     "type": "module",
     "sideEffects": false,
