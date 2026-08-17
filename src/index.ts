@@ -1,6 +1,9 @@
 import manifestJson from '../assets/manifest.json' with { type: 'json' };
 
-import { EXTENSION_LANGUAGE_BRIDGE } from './extension-language-bridge.js';
+import {
+    EXTENSION_LANGUAGE_BRIDGE,
+    FILENAME_LANGUAGE_BRIDGE,
+} from './extension-language-bridge.js';
 
 /**
  * The subset of the upstream `vscode-icons` icon-theme manifest (see `scripts/update-icons.ts`) this package
@@ -46,14 +49,22 @@ function extensionSuffixCandidates(lowercasedName: string): string[] {
 /**
  * Resolves the vscode-icons SVG filename for a file name, or `undefined` when nothing in the vendored manifest
  * matches (callers fall back to `DEFAULT_FILE`). Lookup order mirrors VS Code's icon-theme resolution: an exact
- * `fileNames` match, then the longest-to-shortest extension suffix against `fileExtensions`, then the last extension
- * segment resolved through `EXTENSION_LANGUAGE_BRIDGE` into a `languageIcons` entry.
+ * `fileNames` match, then an exact-name resolution through `FILENAME_LANGUAGE_BRIDGE` into `languageIcons` (VS Code
+ * ranks filename associations above extension ones), then the longest-to-shortest extension suffix against
+ * `fileExtensions`, then the last extension segment resolved through `EXTENSION_LANGUAGE_BRIDGE` into a
+ * `languageIcons` entry.
  */
 export function getIconForFile(fileName: string): string | undefined {
     const lowercased = fileName.toLowerCase();
 
     const byExactName = manifest.fileNames[lowercased];
     if (byExactName) return byExactName;
+
+    const filenameLanguageId = FILENAME_LANGUAGE_BRIDGE[lowercased];
+    const byFilenameLanguage = filenameLanguageId
+        ? manifest.languageIcons[filenameLanguageId]
+        : undefined;
+    if (byFilenameLanguage) return byFilenameLanguage;
 
     const suffixes = extensionSuffixCandidates(lowercased);
     for (const suffix of suffixes) {

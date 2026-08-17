@@ -1,6 +1,6 @@
 {
     "name": "@yutengjing/vscode-icons",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Self-maintained, browser-safe vscode-icons file/folder icon lookup, vendored from the upstream vscode-icons VS Code extension.",
     "keywords": [
         "vscode-icons",

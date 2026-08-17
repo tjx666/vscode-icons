@@ -15,6 +15,33 @@
  * icon; every target language id is verified against the vendored `assets/manifest.json` by
  * `src/__tests__/index.test.ts`.
  */
+/**
+ * Maps exact, extensionless (or extension-agnostic) file names to the VS Code language identifier vscode-icons keys
+ * its `languageIcons` table by. Mirrors the `filenames` entries of VS Code's built-in language contributions
+ * (e.g. `Dockerfile` → `dockerfile`, `Makefile` → `makefile`, `Jenkinsfile` → `groovy`), which the upstream
+ * manifest's `fileNames` table intentionally omits for the same reason `EXTENSION_LANGUAGE_BRIDGE` exists: a real
+ * VS Code install resolves them through the language registry this package does not embed. Keys are lowercase;
+ * curated by hand and verified against `assets/manifest.json` by `src/__tests__/index.test.ts`.
+ */
+export const FILENAME_LANGUAGE_BRIDGE: Readonly<Record<string, string>> = {
+    '.bash_login': 'shellscript',
+    '.bash_logout': 'shellscript',
+    '.bash_profile': 'shellscript',
+    '.bashrc': 'shellscript',
+    '.profile': 'shellscript',
+    '.zlogin': 'shellscript',
+    '.zprofile': 'shellscript',
+    '.zshenv': 'shellscript',
+    '.zshrc': 'shellscript',
+    'cmakelists.txt': 'cmake',
+    'containerfile': 'dockerfile',
+    'dockerfile': 'dockerfile',
+    'gnumakefile': 'makefile',
+    'jenkinsfile': 'groovy',
+    'justfile': 'just',
+    'makefile': 'makefile',
+};
+
 export const EXTENSION_LANGUAGE_BRIDGE: Readonly<Record<string, string>> = {
     adoc: 'asciidoc',
     asciidoc: 'asciidoc',

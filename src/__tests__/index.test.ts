@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { EXTENSION_LANGUAGE_BRIDGE } from '../extension-language-bridge';
+import {
+    EXTENSION_LANGUAGE_BRIDGE,
+    FILENAME_LANGUAGE_BRIDGE,
+} from '../extension-language-bridge';
 import {
     DEFAULT_FILE,
     DEFAULT_FOLDER,
@@ -50,9 +53,23 @@ describe('getIconForFile', () => {
         expect(getIconForFile('unknown')).toBeUndefined();
     });
 
+    it('resolves extensionless file names through the filename-language bridge', () => {
+        expect(getIconForFile('Dockerfile')).toBe('file_type_docker.svg');
+        expect(getIconForFile('Makefile')).toBe('file_type_gnu.svg');
+        expect(getIconForFile('Jenkinsfile')).toBe('file_type_groovy.svg');
+        expect(getIconForFile('CMakeLists.txt')).toBe('file_type_cmake.svg');
+        expect(getIconForFile('.zshrc')).toBe('file_type_shell.svg');
+    });
+
     it('every extension-language bridge entry resolves to a vendored language icon', () => {
         for (const [extension, languageId] of Object.entries(EXTENSION_LANGUAGE_BRIDGE)) {
             expect(manifest.languageIcons[languageId], `${extension} -> ${languageId}`).toBeDefined();
+        }
+    });
+
+    it('every filename-language bridge entry resolves to a vendored language icon', () => {
+        for (const [fileName, languageId] of Object.entries(FILENAME_LANGUAGE_BRIDGE)) {
+            expect(manifest.languageIcons[languageId], `${fileName} -> ${languageId}`).toBeDefined();
         }
     });
 });
