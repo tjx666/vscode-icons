@@ -1,0 +1,58 @@
+{
+    "name": "@yutengjing/vscode-icons",
+    "version": "0.1.0",
+    "description": "Self-maintained, browser-safe vscode-icons file/folder icon lookup, vendored from the upstream vscode-icons VS Code extension.",
+    "keywords": [
+        "vscode-icons",
+        "file-icons",
+        "icon-theme",
+        "svg"
+    ],
+    "license": "MIT",
+    "author": "YuTengjing",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yutengjing/vscode-icons.git"
+    },
+    "homepage": "https://github.com/yutengjing/vscode-icons",
+    "bugs": {
+        "url": "https://github.com/yutengjing/vscode-icons/issues"
+    },
+    "type": "module",
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./assets/*": "./assets/*"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist",
+        "assets",
+        "LICENSE",
+        "LICENSE-ICONS",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "prepublishOnly": "npm run build",
+        "test": "vitest run",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
+        "update-icons": "tsx scripts/update-icons.ts"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.5",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.3",
+        "vitest": "^3.0.5"
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}
