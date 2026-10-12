@@ -1,3 +1,4 @@
+import languageRegistryJson from '../assets/language-registry.json' with { type: 'json' };
 import manifestJson from '../assets/manifest.json' with { type: 'json' };
 
 import {
@@ -24,6 +25,42 @@ interface VscodeIconsManifest {
 
 const manifest = manifestJson as VscodeIconsManifest;
 
+/** Snapshot of VS Code's built-in language contributions; see `scripts/update-language-registry.ts`. */
+interface LanguageRegistry {
+    vscodeVersion: string;
+    extensions: Record<string, string>;
+    filenames: Record<string, string>;
+    filenamePatterns: [pattern: string, languageId: string][];
+}
+
+const languageRegistry = languageRegistryJson as unknown as LanguageRegistry;
+
+/** The VS Code release whose built-in language contributions `assets/language-registry.json` was generated from. */
+export const VSCODE_LANGUAGE_REGISTRY_VERSION = languageRegistry.vscodeVersion;
+
+/**
+ * Compiles a basename glob as VS Code's `filenamePatterns` uses it: `*` and `?` never cross a path separator, and
+ * the generated registry only keeps basename patterns, so a plain anchored regular expression is equivalent.
+ */
+function compileBasenameGlob(pattern: string): RegExp {
+    const source = [...pattern]
+        .map((character) => {
+            if (character === '*') return '[^/]*';
+            if (character === '?') return '[^/]';
+            return character.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+        })
+        .join('');
+    return new RegExp(`^${source}$`);
+}
+
+const FILENAME_PATTERN_LANGUAGES = languageRegistry.filenamePatterns.map(
+    ([pattern, languageId]) => [compileBasenameGlob(pattern), languageId] as const,
+);
+
+function languageIcon(languageId: string | undefined): string | undefined {
+    return languageId ? manifest.languageIcons[languageId] : undefined;
+}
+
 /** The vendored `vscode-icons` extension version (see `README.md` for the update workflow). */
 export const VSCODE_ICONS_VERSION = manifest.version;
 
@@ -47,12 +84,19 @@ function extensionSuffixCandidates(lowercasedName: string): string[] {
 }
 
 /**
- * Resolves the vscode-icons SVG filename for a file name, or `undefined` when nothing in the vendored manifest
- * matches (callers fall back to `DEFAULT_FILE`). Lookup order mirrors VS Code's icon-theme resolution: an exact
- * `fileNames` match, then an exact-name resolution through `FILENAME_LANGUAGE_BRIDGE` into `languageIcons` (VS Code
- * ranks filename associations above extension ones), then the longest-to-shortest extension suffix against
- * `fileExtensions`, then the last extension segment resolved through `EXTENSION_LANGUAGE_BRIDGE` into a
- * `languageIcons` entry.
+ * Resolves the vscode-icons SVG filename for a file name, or `undefined` when nothing matches (callers fall back to
+ * `DEFAULT_FILE`). Lookup order mirrors VS Code's icon-theme resolution, which ranks `fileNames` above
+ * `fileExtensions` above `languageIds`:
+ *
+ * 1. an exact `fileNames` match;
+ * 2. the language of the exact file name (`Dockerfile`, `PKGBUILD`), ranked above extensions so `CMakeLists.txt`
+ *    keeps its CMake icon;
+ * 3. the longest-to-shortest extension suffix against `fileExtensions`;
+ * 4. the language of a basename glob (`.env.*`, `Dockerfile.*`), which VS Code ranks above extension associations;
+ * 5. the language of the longest-to-shortest extension suffix (`hpp.in` before `in`).
+ *
+ * Steps 2, 4, and 5 consult the hand-curated supplement in `extension-language-bridge.ts` before the generated
+ * VS Code language registry.
  */
 export function getIconForFile(fileName: string): string | undefined {
     const lowercased = fileName.toLowerCase();
@@ -60,10 +104,9 @@ export function getIconForFile(fileName: string): string | undefined {
     const byExactName = manifest.fileNames[lowercased];
     if (byExactName) return byExactName;
 
-    const filenameLanguageId = FILENAME_LANGUAGE_BRIDGE[lowercased];
-    const byFilenameLanguage = filenameLanguageId
-        ? manifest.languageIcons[filenameLanguageId]
-        : undefined;
+    const byFilenameLanguage = languageIcon(
+        FILENAME_LANGUAGE_BRIDGE[lowercased] ?? languageRegistry.filenames[lowercased],
+    );
     if (byFilenameLanguage) return byFilenameLanguage;
 
     const suffixes = extensionSuffixCandidates(lowercased);
@@ -72,10 +115,16 @@ export function getIconForFile(fileName: string): string | undefined {
         if (byExtension) return byExtension;
     }
 
-    const lastSegment = suffixes.at(-1);
-    if (lastSegment) {
-        const languageId = EXTENSION_LANGUAGE_BRIDGE[lastSegment];
-        const byLanguage = languageId ? manifest.languageIcons[languageId] : undefined;
+    for (const [pattern, languageId] of FILENAME_PATTERN_LANGUAGES) {
+        if (!pattern.test(lowercased)) continue;
+        const byPatternLanguage = languageIcon(languageId);
+        if (byPatternLanguage) return byPatternLanguage;
+    }
+
+    for (const suffix of suffixes) {
+        const byLanguage = languageIcon(
+            EXTENSION_LANGUAGE_BRIDGE[suffix] ?? languageRegistry.extensions[suffix],
+        );
         if (byLanguage) return byLanguage;
     }
 

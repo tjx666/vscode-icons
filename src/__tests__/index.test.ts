@@ -12,13 +12,20 @@ import {
     getIconForFolder,
     getIconForOpenFolder,
 } from '../index';
+import languageRegistryJson from '../../assets/language-registry.json';
 import manifestJson from '../../assets/manifest.json';
 
 interface VscodeIconsManifest {
+    fileExtensions: Record<string, string>;
+    fileNames: Record<string, string>;
     languageIcons: Record<string, string>;
 }
 
 const manifest = manifestJson as unknown as VscodeIconsManifest;
+const languageRegistry = languageRegistryJson as unknown as {
+    extensions: Record<string, string>;
+    filenames: Record<string, string>;
+};
 
 describe('getIconForFile', () => {
     it('resolves an exact file name match before any extension lookup', () => {
@@ -59,6 +66,47 @@ describe('getIconForFile', () => {
         expect(getIconForFile('Jenkinsfile')).toBe('file_type_groovy.svg');
         expect(getIconForFile('CMakeLists.txt')).toBe('file_type_cmake.svg');
         expect(getIconForFile('.zshrc')).toBe('file_type_shell.svg');
+    });
+
+    it('resolves extensions VS Code registers through its built-in language contributions', () => {
+        expect(getIconForFile('.changelogrc.cjs')).toBe('file_type_js.svg');
+        expect(getIconForFile('rules.mk')).toBe('file_type_gnu.svg');
+        expect(getIconForFile('config.hpp.in')).toBe('file_type_cpp.svg');
+        expect(getIconForFile('.envrc')).toBe('file_type_shell.svg');
+        expect(getIconForFile('PKGBUILD')).toBe('file_type_shell.svg');
+    });
+
+    it('resolves VS Code filename patterns such as .env.*', () => {
+        expect(getIconForFile('.env.desktop')).toBe('file_type_dotenv.svg');
+        expect(getIconForFile('.env.example.development')).toBe('file_type_dotenv.svg');
+        expect(getIconForFile('Dockerfile.dev')).toBe('file_type_docker.svg');
+        expect(getIconForFile('Jenkinsfile.release')).toBe('file_type_groovy.svg');
+    });
+
+    it('keeps curated supplement overrides above the generated registry', () => {
+        expect(languageRegistry.extensions.editorconfig).toBe('properties');
+        expect(getIconForFile('shared.editorconfig')).toBe('file_type_editorconfig.svg');
+    });
+
+    it('every curated supplement entry changes the resolved icon', () => {
+        for (const [extension, languageId] of Object.entries(EXTENSION_LANGUAGE_BRIDGE)) {
+            expect(manifest.fileExtensions[extension], `${extension} is shadowed`).toBeUndefined();
+            const generated = languageRegistry.extensions[extension];
+            if (generated) {
+                expect(manifest.languageIcons[generated], `${extension} repeats the registry`).not.toBe(
+                    manifest.languageIcons[languageId],
+                );
+            }
+        }
+        for (const [fileName, languageId] of Object.entries(FILENAME_LANGUAGE_BRIDGE)) {
+            expect(manifest.fileNames[fileName], `${fileName} is shadowed`).toBeUndefined();
+            const generated = languageRegistry.filenames[fileName];
+            if (generated) {
+                expect(manifest.languageIcons[generated], `${fileName} repeats the registry`).not.toBe(
+                    manifest.languageIcons[languageId],
+                );
+            }
+        }
     });
 
     it('every extension-language bridge entry resolves to a vendored language icon', () => {

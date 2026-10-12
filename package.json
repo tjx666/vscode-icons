@@ -1,6 +1,6 @@
 {
     "name": "@yutengjing/vscode-icons",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "Self-maintained, browser-safe vscode-icons file/folder icon lookup, vendored from the upstream vscode-icons VS Code extension.",
     "keywords": [
         "vscode-icons",
@@ -41,7 +41,8 @@
         "prepublishOnly": "npm run build",
         "test": "vitest run",
         "typecheck": "tsc --noEmit -p tsconfig.json",
-        "update-icons": "tsx scripts/update-icons.ts"
+        "update-icons": "tsx scripts/update-icons.ts",
+        "update-language-registry": "tsx scripts/update-language-registry.ts"
     },
     "devDependencies": {
         "@types/node": "^22.10.5",
