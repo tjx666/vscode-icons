@@ -29,20 +29,32 @@ npm install @yutengjing/vscode-icons
 - `DEFAULT_FILE`, `DEFAULT_FOLDER`, `DEFAULT_FOLDER_OPENED` — the vendored default icon filenames.
 - `VSCODE_ICONS_VERSION` — the vendored upstream extension version.
 
-Lookup order for `getIconForFile` mirrors VS Code's own icon-theme resolution:
+Lookup order for `getIconForFile` mirrors VS Code's own icon-theme resolution (`fileNames` above
+`fileExtensions` above `languageIds`):
 
 1. An exact, case-insensitive match against `fileNames` (e.g. `package.json`, `Cargo.toml`,
    `LICENSE`).
-2. The longest-to-shortest extension suffix against `fileExtensions` (covers compound suffixes
+2. The language of the exact file name (e.g. `Dockerfile`, `PKGBUILD`, `.envrc`).
+3. The longest-to-shortest extension suffix against `fileExtensions` (covers compound suffixes
    vscode-icons ships, such as `d.ts`, `test.tsx`, or the three-segment `buf.gen.yml`).
-3. The last extension segment resolved through `src/extension-language-bridge.ts` into a
-   `languageIcons` entry.
+4. The language of a basename glob (e.g. `.env.*`, `Dockerfile.*`, `tsconfig.*.json`).
+5. The language of the longest-to-shortest extension suffix (e.g. `.cjs`, `.hpp.in`, `.mk`).
 
-Step 3 exists because the upstream icon-theme manifest only keys plain, single-segment extensions
-(`.ts`, `.py`, …) by VS Code *language id* (`typescript`, `python`, …), not by the extension itself
-— that resolution normally happens inside VS Code's own language registry, which this package does
-not embed. `extension-language-bridge.ts` is a hand-curated table recreating the subset of that
-mapping needed for common languages; see the comment there before extending it.
+Steps 2, 4, and 5 exist because the upstream icon-theme manifest keys most source files by VS Code
+*language id* (`javascript`, `dotenv`, …), not by name or extension; that resolution normally
+happens inside VS Code's language registry, which this package does not embed. Instead it ships
+`assets/language-registry.json`, a snapshot of the `extensions`, `filenames`, and basename
+`filenamePatterns` of every built-in VS Code language that has a vendored icon. Regenerate it from
+a local VS Code install after `update-icons` or a VS Code release:
+
+```bash
+npm run update-language-registry            # macOS default install path
+npm run update-language-registry -- <path>  # the `resources/app` directory of another install
+```
+
+`src/extension-language-bridge.ts` holds the small hand-curated supplement for languages that come
+from third-party extensions (`vue`, `svelte`, `toml`, …) and deliberate overrides; it wins over the
+generated registry, and its tests reject entries that do not change the resolved icon.
 
 ## Consuming the icon SVGs
 
